@@ -1,9 +1,10 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <random>
 #include <Windows.h>
 #include <string>
 #include <algorithm>
+#include <ctime>
 
 using namespace std;
 
@@ -94,7 +95,8 @@ bool LoadGame(GameState& gs) {
 void ShowStats(GameState& gs) {
     cout << "Мой повелитель, соизволь поведать тебе" << endl;
     cout << "в году " << gs.round + 1 << " твоего высочайшего правления" << endl << endl;
-    if(gs.populationStarved > 0) cout << gs.populationStarved << " человек умерли с голоду, и " << gs.populationArrived << " человек прибыли в наш великий город;" << endl;
+    if (gs.populationStarved > 0) cout << gs.populationStarved << " человек умерли с голоду, и ";
+    if(gs.populationArrived > 0)cout << gs.populationArrived << " человек прибыли в наш великий город;" << endl;
     if (gs.isPlague) {
         cout << "Чума уничтожила половину населения;" << endl;
     }
@@ -160,9 +162,11 @@ void GameOver() {
 }
 
 void PlayRound(GameState& gs) {
-    gs.landPrice = minLandPrice + rand() % (maxLandPrice - minLandPrice + 1);
-
+    if (gs.landPrice == 0) {
+        gs.landPrice = minLandPrice + rand() % (maxLandPrice - minLandPrice + 1);
+    }
     SaveGame(gs);
+
     ShowStats(gs);
     gs.isPlague = false;
 
@@ -225,16 +229,26 @@ void PlayRound(GameState& gs) {
     gs.populationArrived = clamp(gs.populationArrived, 0, 50);
     gs.population += gs.populationArrived;
 
-    int chanceValue = rand() % 101;
+    int chanceValue = rand() % 100;
     if (chanceValue < plagueChance) {
         gs.isPlague = true;
         gs.population /= 2;
+    }
+
+    if (gs.population <= 0) {
+        scoreL = 0;
+        scoreP = 100;
+        isGameOver = true;
+        GameOver();
+        return;
     }
     gs.landPrice = 0;
 }
 
 int main()
 {
+    srand(static_cast<unsigned int>(time(0)));
+
     setlocale(LC_ALL, "Russian");
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
@@ -252,7 +266,7 @@ int main()
             }
             else {
                 cout << "Не удалось прочитать летопись. Начинаем заново." << endl << endl;
-                gs = GameState(); // Сброс к начальным значениям
+                gs = GameState();
             }
         }
     }
